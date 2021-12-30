@@ -71,19 +71,22 @@ docker コンテナが run , stop するまでの流れを順に見ていきま�
 
 ### docker コンテナが run するまでの流れ
 
+![run.drawio.png](https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/250243/f02c7616-29a6-2cf7-4155-111385b3691d.png)
+
 1. `docker compose up -d` コマンドを実行する
-2. docker はコンテナを run するとき、Dockerfile に書かれた CMD の コマンド my_wrapper_script.sh を PID1 プロセスとして実行する
-3. my_wrapper_script.sh は django と postgres を順に子プロセスとして起動する
+2. コンテナが run するとき、Dockerfile に書かれた CMD の コマンド my_wrapper_script.sh を PID1 プロセスとして実行する
+3. my_wrapper_script.sh のプロセスがは django と postgres を順に子プロセスとして実行する
 
 ### docker コンテナが stop するまでの流れ
 
-1. `docker compose stop` コマンドを実行する
-2. docker はコンテナを stop するとき、シグナル SIGTERM を my_wrapper_script.sh のプロセスに投げる
-3. my_wrapper_script.sh のプロセスは PID1 であるため、SIGTERM を無視し、デフォルトの処理を行わない
-4. 10秒後、docker は my_wrapper_script.sh のプロセスに SIGKILL を投げる
-5. my_wrapper_script.sh のプロセスが強制終了した後 docker はコンテナを停止させるため、コンテナ内すべてのプロセス(django, postgres)を強制終了する
+![stop.drawio.png](https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/250243/a2e2c582-50a7-4795-68fb-fac558ef3807.png)
 
-TODO: 図の追加
+1. `docker compose stop` コマンドを実行する
+2. コンテナが stop するとき、シグナル SIGTERM が PID1 のプロセス(my_wrapper_script.sh のプロセス)に投げられる
+3. my_wrapper_script.sh のプロセスは PID1 であるため、SIGTERM を無視し、デフォルトの処理を行わない
+4. 10秒後、PID1 のプロセス(my_wrapper_script.sh のプロセス)に SIGKILL が投げられる
+5. my_wrapper_script.sh のプロセスは強制終了する
+6. PID1 のプロセスが kill された後コンテナは停止のために、コンテナ内すべてのプロセス(django, postgres)を強制終了する
 
 ## init フラグで解消できないか?
 
@@ -174,3 +177,4 @@ django_postgres
 いかがだったでしょうか?
 公式の罠に危うく引っかかるところでしたね。(私は頭まで浸かりましたが)
 1コンテナ内で複数のプロセスを動かすのは結構面倒なので、できる限り DockerHub の official image を利用し、サービスを分離したほうが良いでしょう。
+
